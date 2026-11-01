@@ -40,9 +40,10 @@ npm run check
 ## หลักการเขียนโค้ด
 
 - ข้อความที่ผู้ใช้เห็นเป็นภาษาไทย
-- ไม่ commit `.env`, Token หรือไฟล์ฐานข้อมูล
+- ไม่ commit `.env`, Token, ไฟล์ฐานข้อมูล หรือโฟลเดอร์ `data/media/`
 - ขอสิทธิ์ Discord เท่าที่จำเป็น ไม่ขอ Administrator
-- เพิ่ม event ใหม่ให้ครบ ทั้งในโค้ด ตาราง Event keys ใน README และ CHANGELOG
+- เพิ่ม event ใหม่ให้ครบ ได้แก่ `LOG_EVENTS` ใน `src/config.js`, handler ใน `src/events/index.js` (ใส่ `record` เพื่อให้ค้นด้วย `/logs history` ได้), ตาราง Event keys ใน README และ CHANGELOG
+- เพิ่มไฟล์ใหม่ใน `src/` ให้เพิ่มลงสคริปต์ `check` ใน `package.json` ด้วย
 
 ## สัญญาอนุญาต
 
