@@ -10,6 +10,7 @@ function privateOverwrites(guild, botId) {
         PermissionFlagsBits.ViewChannel,
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.ManageChannels
       ]

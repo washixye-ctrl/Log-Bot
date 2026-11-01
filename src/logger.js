@@ -1,5 +1,7 @@
-import { EmbedBuilder } from "discord.js";
+import { AttachmentBuilder, EmbedBuilder } from "discord.js";
 import { LOG_EVENTS } from "./config.js";
+
+const MAX_PREVIEW_IMAGES = 4;
 
 function safeText(value, max = 1000) {
   if (value === null || value === undefined || value === "") return "—";
@@ -27,22 +29,58 @@ export function makeEmbed(guild, eventKey, details = {}) {
   return embed;
 }
 
-async function sendToChannel(client, channelId, embed) {
+function buildPayloads(guild, eventKey, details) {
+  const files = (details.files ?? []).slice(0, MAX_PREVIEW_IMAGES);
+  const plain = { embeds: [makeEmbed(guild, eventKey, details)], files: [] };
+  if (!files.length) return { plain, rich: plain };
+
+  const config = LOG_EVENTS[eventKey] ?? { color: 0x5865F2 };
+  const main = makeEmbed(guild, eventKey, { ...details, image: `attachment://${files[0].name}` });
+  const extras = files.slice(1).map(file =>
+    new EmbedBuilder().setColor(config.color).setImage(`attachment://${file.name}`)
+  );
+  return { plain, rich: { embeds: [main, ...extras], files } };
+}
+
+async function sendToChannel(client, channelId, payloads) {
   const channel = await client.channels.fetch(channelId).catch(() => null);
   if (!channel?.isTextBased() || !channel.guild) return false;
   const me = channel.guild.members.me;
-  if (me && !channel.permissionsFor(me)?.has(["ViewChannel", "SendMessages", "EmbedLinks"])) return false;
-  await channel.send({ embeds: [embed] });
+  const permissions = me ? channel.permissionsFor(me) : null;
+  if (permissions && !permissions.has(["ViewChannel", "SendMessages", "EmbedLinks"])) return false;
+
+  const canAttach = !permissions || permissions.has("AttachFiles");
+  if (payloads.rich.files.length && canAttach) {
+    try {
+      await channel.send({
+        embeds: payloads.rich.embeds,
+        files: payloads.rich.files.map(file => new AttachmentBuilder(file.buffer, { name: file.name }))
+      });
+      return true;
+    } catch (error) {
+      console.warn(`[LOG] send with images failed (${error.message}); retrying without images.`);
+    }
+  }
+  await channel.send({ embeds: payloads.plain.embeds });
   return true;
 }
 
 export async function sendLog(client, db, guild, eventKey, details = {}) {
   if (!db.isEnabled(guild.id)) return;
-  const embed = makeEmbed(guild, eventKey, details);
+
+  if (details.record) {
+    try {
+      db.addLog({ guildId: guild.id, eventKey, ...details.record });
+    } catch (error) {
+      console.error(`[LOG:${eventKey}] database save failed:`, error.message);
+    }
+  }
+
+  const payloads = buildPayloads(guild, eventKey, details);
   const localChannelId = db.getChannel(guild.id, eventKey);
   if (localChannelId) {
     try {
-      await sendToChannel(client, localChannelId, embed);
+      await sendToChannel(client, localChannelId, payloads);
     } catch (error) {
       console.error(`[LOG:${eventKey}] local send failed:`, error.message);
     }
@@ -53,7 +91,7 @@ export async function sendLog(client, db, guild, eventKey, details = {}) {
     try { selected = JSON.parse(relay.events); } catch {}
     if (!selected.includes("*") && !selected.includes(eventKey)) continue;
     try {
-      const sent = await sendToChannel(client, relay.destination_channel_id, embed);
+      const sent = await sendToChannel(client, relay.destination_channel_id, payloads);
       if (!sent) console.warn(`[RELAY:${relay.id}] destination unavailable or missing permissions.`);
     } catch (error) {
       console.error(`[RELAY:${relay.id}] send failed:`, error.message);
@@ -76,8 +114,9 @@ export async function sendRelayTest(client, db, sourceGuild) {
       )
       .setTimestamp()
       .setFooter({ text: "WASHI LOG SYSTEM" });
+    const payloads = { plain: { embeds: [embed], files: [] }, rich: { embeds: [embed], files: [] } };
     try {
-      results.push({ id: relay.id, ok: await sendToChannel(client, relay.destination_channel_id, embed) });
+      results.push({ id: relay.id, ok: await sendToChannel(client, relay.destination_channel_id, payloads) });
     } catch {
       results.push({ id: relay.id, ok: false });
     }

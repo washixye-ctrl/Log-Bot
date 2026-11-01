@@ -1,3 +1,15 @@
+const number = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+};
+
+export const SETTINGS = {
+  logRetentionDays: number(process.env.LOG_RETENTION_DAYS, 90),
+  mediaCacheEnabled: (process.env.MEDIA_CACHE ?? "true").toLowerCase() !== "false",
+  mediaMaxMb: number(process.env.MEDIA_MAX_MB, 8),
+  mediaCacheHours: number(process.env.MEDIA_CACHE_HOURS, 72)
+};
+
 export const LOG_EVENTS = {
   member_join: { label: "สมาชิกเข้าเซิร์ฟเวอร์", channel: "📒・member-join", color: 0x57F287 },
   member_leave: { label: "สมาชิกออกเซิร์ฟเวอร์", channel: "📒・member-leave", color: 0xED4245 },
