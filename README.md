@@ -431,7 +431,7 @@ WASHI-LOG-SYSTEM/
 | | |
 |---|---|
 | 👤 **พัฒนาโดย** | **Washi** |
-| 🎨 **ภาพประกอบ** | ใส่ชื่อศิลปินเจ้าของภาพและลิงก์ต้นฉบับที่นี่ |
+| 🎨 **ภาพประกอบ** | Washiria Nosee |
 | 🧰 **เครื่องมือ** | [discord.js](https://discord.js.org) • [Node.js](https://nodejs.org) • [sql.js](https://github.com/sql-js/sql.js) |
 | 📄 **สัญญาอนุญาต** | [MIT License](LICENSE) © 2026 Washi |
 
